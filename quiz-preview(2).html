@@ -8,11 +8,15 @@
 <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
 
 <style>
-body{font-family:Nunito;background:#111;color:#fff;text-align:center}
+body{font-family:Nunito;background:#111;color:#fff;text-align:center;margin:0;padding:20px}
 .screen{display:none}
 .screen.active{display:block}
 #qrcode{background:#fff;padding:12px;border-radius:12px;display:inline-block;margin:10px}
 button{padding:10px 20px;margin:10px;border:none;border-radius:10px;background:#4d96ff;color:#fff;font-weight:700;cursor:pointer}
+#answers{display:flex;flex-direction:column;gap:10px;max-width:700px;margin:20px auto}
+#answers button{white-space:normal}
+input{padding:10px 14px;border-radius:10px;border:none;max-width:260px;width:100%}
+#qrurl{word-break:break-all;max-width:700px;margin:10px auto;color:#ccc}
 </style>
 </head>
 
@@ -27,7 +31,7 @@ button{padding:10px 20px;margin:10px;border:none;border-radius:10px;background:#
 </div>
 
 <div id="sh" class="screen">
-  <input id="pname" placeholder="Ton prénom">
+  <p><input id="pname" placeholder="Ton prénom"></p>
   <button onclick="begin()">Start</button>
 </div>
 
@@ -47,25 +51,106 @@ let current = 0;
 let score = 0;
 
 const questions = [
-  {e:"🤖",t:"Qu'est-ce que l'intelligence artificielle (IA) ?",a:[
-  "Robot humain","Techniques imitant l’intelligence","OS","Base RH"],c:1},
-  {e:"💬",t:"Que permet un assistant IA ?",a:[
-  "Automatiser tout","Répondre à des demandes","Évaluer agents","Créer algo"],c:1},
-  {e:"🚀",t:"Différence assistant vs agent IA ?",a:[
-  "Prix","Autonome vs exécutant","Illégal","Aucune"],c:1},
-  {e:"✍️",t:"Prompting ?",a:[
-  "Logiciel","IA seule","Instructions à IA","Analyse données"],c:2},
-  {e:"🌀",t:"Hallucination IA ?",a:[
-  "Bug","Prédiction exacte","Réponse fausse crédible","Illégal"],c:2},
-  {e:"📅",t:"IA générative depuis ?",a:["2000","2010","2018","2022"],c:3},
-  {e:"⚖️",t:"AI Act RH ?",a:[
-  "Interdit","Risque élevé","Limité","Minimal"],c:1},
-  {e:"🗓️",t:"IA interdites date ?",a:[
-  "2024","2025","2026","2027"],c:1},
-  {e:"🔄",t:"Usage augmentatif ?",a:[
-  "Remplace RH","Décide seul","Aide humain","Automatique"],c:2},
-  {e:"🌱",t:"Nouveau métier IA ?",a:[
-  "Numérique","Éthicien IA","Blockchain","Postal"],c:1}
+  {
+    e:"🤖",
+    t:"Qu'est-ce que l'intelligence artificielle (IA) ?",
+    a:[
+      "Un robot autonome capable de penser comme un humain",
+      "Un ensemble de techniques permettant d'imiter certains comportements intelligents",
+      "Un système d'exploitation pour ordinateurs",
+      "Une base de données sur les métiers RH"
+    ],
+    c:1
+  },
+  {
+    e:"💬",
+    t:"Que permet principalement un assistant IA ?",
+    a:[
+      "D'automatiser des processus complexes sans intervention humaine",
+      "De répondre à des demandes simples formulées par l'utilisateur",
+      "D'évaluer automatiquement les performances des agents",
+      "De créer des algorithmes prédictifs"
+    ],
+    c:1
+  },
+  {
+    e:"🚀",
+    t:"Quelle est la principale différence entre un assistant IA et un agent IA ?",
+    a:[
+      "L'agent IA est gratuit, l'assistant est payant",
+      "L'agent IA est autonome, l'assistant exécute des tâches à la demande",
+      "L'assistant IA est illégal dans les services publics",
+      "Il n'y a aucune différence"
+    ],
+    c:1
+  },
+  {
+    e:"✍️",
+    t:"Que signifie \"prompting\" dans le contexte de l'IA ?",
+    a:[
+      "Un logiciel de paie automatisé",
+      "La capacité de l'IA à raisonner seule",
+      "La manière de formuler des instructions à une IA",
+      "Une méthode d'analyse des données personnelles"
+    ],
+    c:2
+  },
+  {
+    e:"🌀",
+    t:"Qu'appelle-t-on une \"hallucination\" d'un modèle IA ?",
+    a:[
+      "Une surcharge du système informatique",
+      "Une prédiction exacte basée sur des données passées",
+      "Une réponse fausse ou inventée, mais formulée de manière crédible",
+      "Un comportement illégal de l'algorithme"
+    ],
+    c:2
+  },
+  {
+    e:"📅",
+    t:"Depuis quelle année parle-t-on d'IA générative (texte, image, vidéo) ?",
+    a:["Depuis 2000","Depuis 2010","Depuis 2018","Depuis 2022"],
+    c:3
+  },
+  {
+    e:"⚖️",
+    t:"Selon l'AI Act, dans quelle catégorie se trouve l'IA utilisée pour le recrutement ou la gestion RH ?",
+    a:[
+      "Risque inacceptable (interdit)",
+      "Risque élevé (réglementé strictement)",
+      "Risque limité (encadré)",
+      "Risque minimal (libre)"
+    ],
+    c:1
+  },
+  {
+    e:"🗓️",
+    t:"À partir de quelle date les pratiques IA interdites (social scoring, inférence émotions) sont-elles effectivement bannies par l'AI Act ?",
+    a:["1er août 2024","2 février 2025","2 août 2026","1er janvier 2027"],
+    c:1
+  },
+  {
+    e:"🔄",
+    t:"Un usage \"augmentatif\" de l'IA en RH, c'est quoi ?",
+    a:[
+      "L'IA remplace totalement le RH humain",
+      "L'IA prend les décisions finales de recrutement",
+      "L'IA aide l'humain à mieux travailler sans le remplacer",
+      "L'IA gère les bulletins de paie sans contrôle humain"
+    ],
+    c:2
+  },
+  {
+    e:"🌱",
+    t:"Quel nouveau métier RH l'IA est-elle susceptible de créer à moyen terme ?",
+    a:[
+      "Directeur des ressources numériques",
+      "Éthicien IA RH / Responsable conformité IA",
+      "Chef de projet blockchain",
+      "Responsable du tri postal automatisé"
+    ],
+    c:1
+  }
 ];
 
 function show(id){
@@ -73,64 +158,88 @@ function show(id){
   document.getElementById(id).classList.add('active');
 }
 
-function gohome(){show('sh')}
+function gohome(){
+  show('sh');
+}
 
 function begin(){
-  current=0;score=0;
+  current = 0;
+  score = 0;
   show('sq');
   loadQ();
 }
 
 function loadQ(){
-  let q=questions[current];
-  document.getElementById('qt').innerText=q.t;
+  const q = questions[current];
+  document.getElementById('qt').innerText = q.e + " " + q.t;
 
-  let div=document.getElementById('answers');
-  div.innerHTML='';
+  const div = document.getElementById('answers');
+  div.innerHTML = '';
 
   q.a.forEach((ans,i)=>{
-    let b=document.createElement('button');
-    b.innerText=ans;
-    b.onclick=()=>answer(i);
+    const b = document.createElement('button');
+    b.innerText = ans;
+    b.onclick = ()=>answer(i);
     div.appendChild(b);
   });
 }
 
 function answer(i){
-  if(i===questions[current].c) score++;
+  if(i === questions[current].c) score++;
   current++;
-  if(current>=questions.length) end();
+  if(current >= questions.length) end();
   else loadQ();
 }
 
 function end(){
   show('sr');
-  document.getElementById('result').innerText="Score : "+score+"/10";
+  document.getElementById('result').innerText = "Score : " + score + "/10";
 
-  let txt="";
-  if(score>=9) txt="Maîtrise — reste en veille, continue d’explorer.";
-  else if(score>=6) txt="Intermédiaire — continue à explorer en promptant chaque jour.";
-  else txt="Débutant — continue d’explorer.";
+  let txt = "";
+  if(score >= 9) txt = "Maîtrise : bravo ; reste en veille, continue d'explorer.";
+  else if(score >= 6) txt = "Intermédiaire : bravo, continue à explorer en promptant chaque jour.";
+  else txt = "Débutant : continue d'explorer.";
 
-  document.getElementById('level').innerText=txt;
+  document.getElementById('level').innerText = txt;
 }
 
-function restart(){show('sqr');renderQR();}
+function restart(){
+  show('sqr');
+  renderQR();
+}
+
+function buildQuizUrl() {
+  let path = window.location.pathname;
+
+  // Si le fichier est index.html, on garde juste le dossier
+  if (path.endsWith('/index.html')) {
+    path = path.replace('/index.html', '/');
+  }
+
+  // Si jamais pas de slash final, on le garde tel quel
+  // ex: /mon-repo/ ou /mon-repo
+  const baseUrl = window.location.origin + path;
+
+  // Ajoute le ?play=1 sans casser le chemin
+  return baseUrl + (baseUrl.includes('?') ? '&' : '?') + 'play=1';
+}
 
 function renderQR(){
-  let base = window.location.href.split('?')[0];
-  let url = base + "?play=1";
+  const url = buildQuizUrl();
 
-  document.getElementById('qrurl').innerText=url;
+  document.getElementById('qrurl').innerText = url;
 
   document.getElementById('qrcode').innerHTML =
-    '<img src="https://api.qrserver.com/v1/create-qr-code/?size=250x250&data='
-    + encodeURIComponent(url) + '">';
+    '<img ' +
+    'src="https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=' + encodeURIComponent(url) + '" ' +
+    'alt="QR code du quiz" width="250" height="250">';
 }
 
 renderQR();
 
-if(window.location.search.includes("play=1")) gohome();
+if (window.location.search.includes('play=1')) {
+  gohome();
+}
 </script>
 
 </body>
