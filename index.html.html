@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🤖 Quiz IA Live</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&family=Nunito+Sans:wght@400;600;700&display=swap');
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{--bg:#0f0f1a;--card:#1a1a2e;--purple:#7c3aed;--yellow:#fbbf24;--pink:#ec4899;--green:#10b981;--red:#e21b3c;--blue:#1368ce;}
+body{font-family:'Nunito Sans',sans-serif;background:var(--bg);color:#fff;min-height:100vh;overflow-x:hidden;}
+
+@keyframes slideUp{from{opacity:0;transform:translateY(28px);}to{opacity:1;transform:translateY(0);}}
+@keyframes pop{0%{transform:scale(.8);opacity:0;}60%{transform:scale(1.1);}100%{transform:scale(1);opacity:1;}}
+@keyframes bounce{0%,100%{transform:translateY(0);}50%{transform:translateY(-10px);}}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.5;}}
+@keyframes spin{to{transform:rotate(360deg);}}
+@keyframes confettiFall{0%{transform:translateY(0) rotate(0deg);opacity:1;}100%{transform:translateY(110vh) rotate(720deg);opacity:0;}}
+@keyframes shake{0%,100%{transform:translateX(0);}25%{transform:translateX(-8px);}75%{transform:translateX(8px);}}
+@keyframes glow{0%,100%{box-shadow:0 0 20px var(--yellow);}50%{box-shadow:0 0 50px var(--yellow);}}
+
+.confetti-container{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:999;}
+.confetti-piece{position:absolute;top:-10px;opacity:0;animation:confettiFall linear forwards;}
+
+nav{display:flex;justify-content:space-between;align-items:center;padding:12px 20px;
+  background:rgba(0,0,0,.5);backdrop-filter:blur(12px);border-bottom:3px solid var(--red);
+  position:sticky;top:0;z-index:100;}
+.logo{font-family:'Nunito',sans-serif;font-weight:900;font-size:1.15rem;
+  background:linear-gradient(135deg,#ff3355,#fbbf24,#06b6d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.nav-btns{display:flex;gap:8px;}
+.nbtn{padding:8px 16px;border-radius:25px;border:none;cursor:pointer;font-family:'Nunito',sans-serif;font-weight:800;font-size:.82rem;transition:.2s;}
+.nbtn-play{background:linear-gradient(135deg,#ff3355,#c0054f);color:#fff;}
+.nbtn-admin{background:rgba(255,255,255,.1);color:#fff;border:2px solid rgba(255,255,255,.2);}
+.nbtn:hover{transform:translateY(-2px);}
+
+.screen{display:none;padding:22px 16px;max-width:720px;margin:0 auto;min-height:calc(100vh - 60px);}
+.screen.active{display:block;animation:slideUp .35s ease;}
+
+.hero{text-align:center;padding:14px 0 18px;}
+.hero-icon{font-size:5rem;display:block;animation:bounce 2s infinite;}
+.hero h1{font-family:'Nunito',sans-serif;font-weight:900;font-size:2.2rem;line-height:1.1;margin:10px 0 8px;
+  background:linear-gradient(135deg,#ff3355,#fbbf24,#06b6d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.hero p{color:rgba(255,255,255,.55);margin-bottom:20px;font-size:.95rem;}
+
+.qr-wrap{text-align:center;margin-bottom:20px;}
+.qr-inner{background:#fff;padding:14px;border-radius:18px;display:inline-block;
+  box-shadow:0 0 40px rgba(255,51,85,.5);margin-bottom:10px;}
+.qr-caption{font-size:.82rem;color:rgba(255,255,255,.45);display:block;margin-bottom:4px;}
+.qr-url{font-size:.72rem;color:#06b6d4;word-break:break-all;display:block;max-width:300px;margin:0 auto;}
+.qr-local{background:rgba(251,191,36,.1);border:2px dashed rgba(251,191,36,.4);border-radius:14px;
+  padding:14px 18px;font-size:.82rem;color:#fbbf24;line-height:1.7;margin-bottom:20px;text-align:center;}
+
+.join-card{background:var(--card);border-radius:24px;padding:22px;border:2px solid rgba(255,255,255,.07);}
+.flabel{font-family:'Nunito',sans-serif;font-weight:900;font-size:.8rem;color:rgba(255,255,255,.5);
+  text-transform:uppercase;letter-spacing:1px;margin-bottom:7px;display:block;}
+.finput{width:100%;padding:13px 18px;border-radius:14px;border:3px solid rgba(255,255,255,.1);
+  background:rgba(255,255,255,.06);color:#fff;font-size:1.05rem;font-family:'Nunito',sans-serif;
+  font-weight:700;outline:none;margin-bottom:18px;transition:.2s;}
+.finput:focus{border-color:#ff3355;}
+.code-row{display:flex;gap:10px;margin-bottom:18px;}
+.code-row .finput{margin-bottom:0;text-transform:uppercase;letter-spacing:3px;font-size:1.2rem;text-align:center;}
+.code-btn{padding:13px 18px;border-radius:14px;border:none;background:linear-gradient(135deg,#ff3355,#c0054f);
+  color:#fff;font-family:'Nunito',sans-serif;font-weight:900;cursor:pointer;white-space:nowrap;transition:.2s;}
+.code-btn:hover{transform:translateY(-2px);}
+
+.av-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:20px;}
+.av-btn{background:rgba(255,255,255,.07);border:3px solid transparent;border-radius:14px;
+  padding:10px 6px;cursor:pointer;text-align:center;transition:.2s;display:flex;flex-direction:column;align-items:center;gap:3px;}
+.av-btn:hover{background:rgba(255,255,255,.14);transform:scale(1.05);}
+.av-btn.sel{border-color:#fbbf24;background:rgba(251,191,36,.18);transform:scale(1.05);}
+.av-em{font-size:2rem;line-height:1;}
+.av-nm{font-size:.68rem;font-weight:700;color:rgba(255,255,255,.6);}
+.btn-go{width:100%;padding:15px;border-radius:16px;border:none;
+  background:linear-gradient(135deg,#ff3355,#c0054f);color:#fff;
+  font-family:'Nunito',sans-serif;font-size:1.1rem;font-weight:900;cursor:pointer;
+  box-shadow:0 6px 24px rgba(255,51,85,.45);transition:.2s;text-transform:uppercase;}
+.btn-go:hover{transform:translateY(-2px);}
+
+.wait-wrap{text-align:center;padding:40px 20px;}
+.wait-av{font-size:6rem;animation:bounce 1.5s infinite;display:block;}
+.wait-name{font-family:'Nunito',sans-serif;font-weight:900;font-size:1.5rem;margin:12px 0 6px;}
+.wait-code{font-size:.85rem;color:rgba(255,255,255,.4);margin-bottom:20px;}
+.wait-spinner{width:44px;height:44px;border:5px solid rgba(255,255,255,.1);border-top-color:#ff3355;
+  border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 16px;}
+.wait-tip{font-size:.82rem;color:rgba(255,255,255,.35);line-height:1.6;}
+
+.quiz-top{background:rgba(255,255,255,.05);border-radius:18px;padding:13px 16px;margin-bottom:13px;border:2px solid rgba(255,255,255,.06);}
+.quiz-meta{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+.q-badge{font-family:'Nunito',sans-serif;font-weight:900;font-size:.88rem;
+  background:linear-gradient(135deg,#ff3355,#fbbf24);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.p-chip{display:flex;align-items:center;gap:7px;background:rgba(255,255,255,.08);padding:5px 12px;border-radius:25px;}
+.timer-wrap{display:flex;justify-content:center;}
+.timer-ring{position:relative;width:64px;height:64px;}
+.timer-ring svg{transform:rotate(-90deg);}
+.timer-ring circle{fill:none;stroke-width:6;stroke-linecap:round;}
+.tbg{stroke:rgba(255,255,255,.1);}
+.tfg{stroke:#fbbf24;transition:stroke-dashoffset .95s linear;}
+.tnum{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  font-family:'Nunito',sans-serif;font-weight:900;font-size:1.25rem;}
+.prog-track{height:7px;background:rgba(255,255,255,.1);border-radius:10px;overflow:hidden;margin-bottom:14px;}
+.prog-fill{height:100%;background:linear-gradient(90deg,#ff3355,#fbbf24,#06b6d4);border-radius:10px;transition:width .5s;}
+.q-card{background:linear-gradient(135deg,#1368ce,#0a4a9c);border-radius:18px;
+  padding:20px;margin-bottom:16px;min-height:76px;display:flex;align-items:center;
+  box-shadow:0 8px 28px rgba(19,104,206,.4);}
+.q-text{font-family:'Nunito',sans-serif;font-weight:800;font-size:1.15rem;line-height:1.45;text-align:center;width:100%;}
+.opts-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.opt{padding:15px 12px;border-radius:15px;border:none;color:#fff;
+  font-family:'Nunito',sans-serif;font-weight:800;font-size:.92rem;cursor:pointer;
+  display:flex;align-items:center;gap:10px;transition:.15s;
+  box-shadow:0 4px 14px rgba(0,0,0,.3);text-align:left;line-height:1.3;}
+.opt:hover:not(:disabled){transform:translateY(-2px);filter:brightness(1.1);}
+.opt:disabled{cursor:default;}
+.opt.reveal-correct{filter:brightness(1.2)!important;box-shadow:0 0 28px rgba(38,137,12,.8)!important;animation:pop .4s;}
+.opt.wrong{filter:brightness(.4)!important;}
+.opt-icon{font-size:1.3rem;flex-shrink:0;}
+.opt-0{background:linear-gradient(135deg,#e21b3c,#a01229);}
+.opt-1{background:linear-gradient(135deg,#1368ce,#0a4a9c);}
+.opt-2{background:linear-gradient(135deg,#d89e00,#a07000);}
+.opt-3{background:linear-gradient(135deg,#26890c,#185c08);}
+.feedback{text-align:center;padding:13px;border-radius:13px;margin-top:10px;
+  font-family:'Nunito',sans-serif;font-weight:800;font-size:.97rem;animation:pop .35s ease;}
+.fb-good{background:rgba(38,137,12,.22);border:2px solid #26890c;color:#4ade80;}
+.fb-bad{background:rgba(226,27,60,.22);border:2px solid #e21b3c;color:#f87171;}
+
+.res-wrap{text-align:center;}
+.medal-big{font-size:5rem;animation:pop .6s ease;display:block;margin-bottom:4px;}
+.res-av{font-size:3rem;display:block;margin-bottom:6px;}
+.res-name{font-family:'Nunito',sans-serif;font-weight:900;font-size:1.5rem;margin-bottom:4px;}
+.score-ring{width:118px;height:118px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  margin:0 auto 16px;background:conic-gradient(#ff3355,#fbbf24);position:relative;animation:glow 2s infinite;}
+.score-ring::before{content:'';position:absolute;width:88px;height:88px;border-radius:50%;background:var(--bg);}
+.score-txt{position:relative;font-family:'Nunito',sans-serif;font-weight:900;font-size:1.5rem;text-align:center;line-height:1.2;}
+.score-lbl{font-size:.68rem;display:block;color:rgba(255,255,255,.55);}
+.lvl-badge{display:inline-block;padding:7px 20px;border-radius:28px;
+  font-family:'Nunito',sans-serif;font-weight:900;font-size:.9rem;margin:10px 0 12px;animation:pop .5s .2s both;}
+.fun-msg{font-family:'Nunito',sans-serif;font-weight:800;font-size:1.02rem;margin-bottom:14px;
+  background:linear-gradient(135deg,#fbbf24,#ff3355);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.train-box{background:linear-gradient(135deg,rgba(255,51,85,.1),rgba(251,191,36,.07));
+  border:2px solid rgba(255,51,85,.3);border-radius:16px;padding:15px;margin-bottom:14px;text-align:left;}
+.train-title{font-family:'Nunito',sans-serif;font-weight:900;color:#fbbf24;margin-bottom:9px;font-size:.9rem;}
+.train-item{display:flex;gap:8px;font-size:.82rem;color:rgba(255,255,255,.7);margin-bottom:6px;line-height:1.5;}
+.advice-box{background:var(--card);border-radius:16px;padding:16px;margin-bottom:16px;border:2px solid rgba(124,58,237,.3);text-align:left;}
+.advice-title{font-family:'Nunito',sans-serif;font-weight:900;font-size:.78rem;color:#a78bfa;text-transform:uppercase;letter-spacing:1px;margin-bottom:9px;}
+.advice-item{display:flex;gap:9px;font-size:.82rem;color:rgba(255,255,255,.7);margin-bottom:7px;line-height:1.5;}
+.btn-replay{padding:13px 30px;border-radius:15px;border:none;
+  background:linear-gradient(135deg,#ff3355,#c0054f);color:#fff;
+  font-family:'Nunito',sans-serif;font-size:.95rem;font-weight:900;cursor:pointer;
+  box-shadow:0 6px 22px rgba(255,51,85,.45);transition:.2s;text-transform:uppercase;}
+.btn-replay:hover{transform:translateY(-2px);}
+
+.lock-wrap{max-width:270px;margin:55px auto;text-align:center;}
+.lock-ico{font-size:3.5rem;margin-bottom:12px;}
+.lock-wrap h2{font-family:'Nunito',sans-serif;font-weight:900;margin-bottom:18px;}
+.lock-input{width:100%;padding:13px 18px;border-radius:13px;border:3px solid rgba(255,255,255,.1);
+  background:var(--card);color:#fff;font-size:1rem;font-family:'Nunito',sans-serif;font-weight:700;
+  outline:none;margin-bottom:11px;transition:.2s;}
+.lock-input:focus{border-color:#ff3355;}
+.lock-hint{margin-top:9px;font-size:.73rem;color:rgba(255,255,255,.3);}
+
+.admin-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;}
+.admin-hdr h2{font-family:'Nunito',sans-serif;font-weight:900;font-size:1.2rem;}
+.live-pill{display:flex;align-items:center;gap:5px;background:rgba(16,185,129,.12);
+  border:1px solid #10b981;padding:5px 11px;border-radius:18px;font-size:.76rem;color:#10b981;font-weight:700;}
+.live-dot{width:7px;height:7px;border-radius:50%;background:#10b981;animation:pulse 1.4s infinite;}
+
+.admin-qr-card{background:var(--card);border-radius:18px;padding:18px;
+  border:2px solid rgba(255,51,85,.3);margin-bottom:18px;text-align:center;}
+.admin-qr-card h3{font-family:'Nunito',sans-serif;font-weight:900;font-size:1rem;margin-bottom:4px;color:#ff3355;}
+.admin-qr-card p{font-size:.78rem;color:rgba(255,255,255,.4);margin-bottom:14px;}
+.qr-admin-inner{background:#fff;padding:14px;border-radius:14px;display:inline-block;
+  box-shadow:0 0 30px rgba(255,51,85,.4);margin-bottom:14px;}
+.room-code-big{font-family:'Nunito',sans-serif;font-weight:900;font-size:2.2rem;
+  letter-spacing:8px;color:#fbbf24;margin-bottom:6px;
+  background:rgba(251,191,36,.1);border:2px solid rgba(251,191,36,.3);
+  border-radius:14px;padding:10px 20px;display:inline-block;}
+.admin-url-tag{font-size:.72rem;color:#06b6d4;word-break:break-all;
+  background:rgba(6,182,212,.08);border-radius:8px;padding:5px 12px;display:inline-block;margin-top:6px;}
+
+.ctrl-row{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:16px;}
+.ctrl-btn{padding:11px 20px;border-radius:13px;border:none;font-family:'Nunito',sans-serif;
+  font-weight:900;font-size:.85rem;cursor:pointer;transition:.2s;}
+.cb-open{background:linear-gradient(135deg,#10b981,#059669);color:#fff;}
+.cb-start{background:linear-gradient(135deg,#ff3355,#c0054f);color:#fff;}
+.cb-next{background:linear-gradient(135deg,#fbbf24,#d97706);color:#000;}
+.cb-stats{background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff;}
+.ctrl-btn:hover{transform:translateY(-2px);}
+.ctrl-btn:disabled{opacity:.4;cursor:not-allowed;transform:none;}
+.status-bar{background:rgba(255,255,255,.05);border-radius:11px;padding:9px 14px;
+  font-size:.82rem;margin-bottom:16px;font-weight:600;border:1px solid rgba(255,255,255,.07);}
+.admin-q-display{background:rgba(19,104,206,.15);border:1px solid rgba(19,104,206,.35);
+  border-radius:11px;padding:11px 15px;margin-bottom:16px;font-size:.85rem;font-weight:600;min-height:42px;color:rgba(255,255,255,.8);}
+.kpi-row{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:18px;}
+.kpi{background:var(--card);border-radius:13px;padding:13px;text-align:center;border:2px solid rgba(255,255,255,.05);}
+.kpi-num{font-family:'Nunito',sans-serif;font-weight:900;font-size:1.7rem;
+  background:linear-gradient(135deg,#ff3355,#fbbf24);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.kpi-label{font-size:.7rem;color:rgba(255,255,255,.4);margin-top:3px;}
+.sec-title{font-family:'Nunito',sans-serif;font-weight:900;font-size:.82rem;
+  color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:1px;margin-bottom:9px;}
+.player-bubbles{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:18px;max-height:150px;overflow-y:auto;}
+.p-bubble{background:rgba(255,255,255,.07);border-radius:11px;padding:7px 9px;
+  display:flex;flex-direction:column;align-items:center;gap:2px;min-width:52px;}
+.p-bname{font-size:.63rem;font-weight:700;color:rgba(255,255,255,.65);text-align:center;}
+.lb-card{background:var(--card);border-radius:15px;padding:15px;border:2px solid rgba(255,255,255,.05);}
+.lb-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04);}
+.lb-row:last-child{border:none;}
+.lb-rank{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Nunito',sans-serif;font-weight:900;font-size:.78rem;}
+.rk1{background:linear-gradient(135deg,#f59e0b,#fbbf24);color:#000;}
+.rk2{background:linear-gradient(135deg,#6b7280,#9ca3af);color:#fff;}
+.rk3{background:linear-gradient(135deg,#92400e,#b45309);color:#fff;}
+.rkx{background:rgba(255,255,255,.1);color:#fff;}
+.lb-av{font-size:1.2rem;}
+.lb-name{flex:1;font-weight:700;font-size:.85rem;}
+.lb-sc{font-family:'Nunito',sans-serif;font-weight:900;color:#fbbf24;font-size:.85rem;}
+.lb-bar2{width:70px;height:5px;background:rgba(255,255,255,.1);border-radius:10px;overflow:hidden;}
+.lb-fill2{height:100%;background:linear-gradient(90deg,#ff3355,#fbbf24);border-radius:10px;}
+.empty{text-align:center;padding:26px;color:rgba(255,255,255,.3);font-size:.82rem;}
+
+.stats-hero{text-align:center;margin-bottom:24px;}
+.stats-hero h2{font-family:'Nunito',sans-serif;font-weight:900;font-size:1.7rem;
+  background:linear-gradient(135deg,#ff3355,#fbbf24,#06b6d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.podium-row{display:flex;justify-content:center;align-items:flex-end;gap:10px;margin-bottom:22px;}
+.pod-card{background:var(--card);border-radius:16px;padding:14px 10px;text-align:center;
+  border:2px solid rgba(255,255,255,.07);flex:1;max-width:150px;animation:pop .5s ease;}
+.pod-0{border-color:#fbbf24;background:rgba(251,191,36,.1);transform:scale(1.06);}
+.pod-1{border-color:#9ca3af;}
+.pod-2{border-color:#b45309;}
+.pod-medal{font-size:1.8rem;margin-bottom:3px;}
+.pod-av{font-size:2.2rem;margin-bottom:5px;}
+.pod-name{font-family:'Nunito',sans-serif;font-weight:900;font-size:.85rem;margin-bottom:3px;}
+.pod-score{font-size:.78rem;color:rgba(255,255,255,.5);font-weight:700;}
+.qs-row{background:var(--card);border-radius:13px;padding:13px 15px;margin-bottom:9px;border:2px solid rgba(255,255,255,.05);}
+.qs-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:7px;gap:10px;}
+.qs-label{font-size:.8rem;font-weight:600;color:rgba(255,255,255,.75);line-height:1.4;}
+.qs-pct{font-family:'Nunito',sans-serif;font-weight:900;font-size:1.05rem;flex-shrink:0;}
+.qs-bar-track{height:9px;background:rgba(255,255,255,.07);border-radius:10px;overflow:hidden;margin-bottom:5px;}
+.qs-bar-fill{height:100%;border-radius:10px;transition:width .8s ease;}
+.qs-meta{font-size:.72rem;color:rgba(255,255,255,.38);}
+.dist-box{background:var(--card);border-radius:15px;padding:15px;border:2px solid rgba(255,255,255,.05);margin-bottom:20px;}
+.dist-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.04);}
+.dist-row:last-child{border:none;}
+.dist-label{font-size:.85rem;font-weight:700;}
+.dist-count{font-family:'Nunito',sans-serif;font-weight:900;font-size:1.05rem;
+  background:linear-gradient(135deg,#ff3355,#fbbf24);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+</style>
+</head>
+<body>
+<div class="confetti-container" id="confetti"></div>
+
+<nav>
+  <div class="logo">🤖 Quiz IA Live</div>
+  <div class="nav-btns">
+    <button class="nbtn nbtn-play" onclick="showScreen('screen-home')">🎮 Jouer</button>
+    <button class="nbtn nbtn-admin" onclick="showScreen('screen-lock')">🔐 Admin</button>
+  </div>
+</nav>
+
+<!-- HOME -->
+<div id="screen-home" class="screen active">
+  <div class="hero">
+    <span class="hero-icon">🤖</span>
+    <h1>Quiz IA — Quel est ton niveau ?</h1>
+    <p>10 questions. Du chrono. Un classement en direct. C'est parti ! 🚀</p>
+  </div>
+  <div class="qr-wrap" id="qrSection">
+    <div class="qr-inner"><div id="qrHome"></div></div>
+    <span class="qr-caption">📱 Scanne pour rejoindre depuis ton mobile</span>
+    <span class="qr-url" id="qrUrlDisplay"></span>
+  </div>
+  <div id="localMsg" class="qr-local" style="display:none">
+    📂 QR code actif uniquement sur GitHub Pages<br>
+    <b>Dépose ce fichier sur GitHub pour l'activer</b>
+  </div>
+  <div class="join-card">
+    <span class="flabel">👤 Ton prénom</span>
+    <input class="finput" id="joinName" placeholder="Ex : Alex..." maxlength="18"/>
+    <span class="flabel">🔑 Code de la salle (affiché par l'admin)</span>
+    <div class="code-row">
+      <input class="finput" id="roomCode" placeholder="EX : QUIZ42" maxlength="8"/>
+      <button class="code-btn" onclick="joinGame()">→</button>
+    </div>
+    <span class="flabel">🎭 Ton personnage</span>
+    <div class="av-grid" id="avGrid"></div>
+    <button class="btn-go" onclick="joinGame()">🚀 Rejoindre la partie !</button>
+  </div>
+</div>
+
+<!-- WAITING -->
+<div id="screen-waiting" class="screen">
+  <div class="wait-wrap">
+    <span class="wait-av" id="waitAv">🤖</span>
+    <div class="wait-name" id="waitName">Joueur</div>
+    <div class="wait-code">Salle : <b id="waitCode">—</b></div>
+    <div class="wait-spinner"></div>
+    <p class="wait-tip">Tu es bien connecté·e ! 🎉<br>L'admin va lancer le quiz dans quelques instants…</p>
+  </div>
+</div>
+
+<!-- QUIZ -->
+<div id="screen-quiz" class="screen">
+  <div class="quiz-top">
+    <div class="quiz-meta">
+      <span class="q-badge" id="qNum">Q 1/10</span>
+      <div class="p-chip">
+        <span id="chipAv" style="font-size:1.15rem">🤖</span>
+        <span id="chipName" style="font-size:.8rem;font-weight:700"></span>
+      </div>
+    </div>
+    <div class="timer-wrap">
+      <div class="timer-ring">
+        <svg width="64" height="64" viewBox="0 0 70 70">
+          <circle class="tbg" cx="35" cy="35" r="30"/>
+          <circle class="tfg" id="timerCircle" cx="35" cy="35" r="30" stroke-dasharray="188.5" stroke-dashoffset="0"/>
+        </svg>
+        <div class="tnum" id="timerNum">20</div>
+      </div>
+    </div>
+  </div>
+  <div class="prog-track"><div class="prog-fill" id="progFill" style="width:0%"></div></div>
+  <div class="q-card"><div class="q-text" id="qText">Chargement…</div></div>
+  <div class="opts-grid" id="optsGrid"></div>
+  <div id="feedback" class="feedback" style="display:none"></div>
+</div>
+
+<!-- RÉSULTAT JOUEUR -->
+<div id="screen-result" class="screen">
+  <div class="res-wrap">
+    <span class="medal-big" id="medalEl">🏆</span>
+    <span class="res-av" id="resAv">🤖</span>
+    <div class="res-name" id="resName">Bravo !</div>
+    <div class="score-ring"><span class="score-txt" id="resSc">0<span class="score-lbl">pts</span></span></div>
+    <div id="lvlBadge"></div>
+    <div class="fun-msg" id="funMsg"></div>
+    <div class="train-box">
+      <div class="train-title">🎓 La formation qui suit va tout changer !</div>
+      <div class="train-item"><span>👂</span><span>Écoute bien — chaque module est adapté à ton niveau</span></div>
+      <div class="train-item"><span>✋</span><span>Participe, pose des questions, ose te tromper !</span></div>
+      <div class="train-item"><span>🧪</span><span>Teste les outils IA présentés dès ce soir</span></div>
+      <div class="train-item"><span>🤝</span><span>Partage tes découvertes avec tes collègues</span></div>
+    </div>
+    <div class="advice-box" id="adviceBox"></div>
+    <button class="btn-replay" onclick="showScreen('screen-home')">🔄 Rejouer</button>
+  </div>
+</div>
+
+<!-- ADMIN LOCK -->
+<div id="screen-lock" class="screen">
+  <div class="lock-wrap">
+    <div class="lock-ico">🔐</div>
+    <h2>Accès Admin</h2>
+    <input class="lock-input" id="adminPwd" type="password" placeholder="Mot de passe…"
+      onkeydown="if(event.key==='Enter')adminLogin()"/>
+    <button class="btn-go" onclick="adminLogin()">Entrer</button>
+    <p class="lock-hint">Mot de passe : <b>admin2024</b></p>
+  </div>
+</div>
+
+<!-- ADMIN DASHBOARD -->
+<div id="screen-admin" class="screen">
+  <div class="admin-hdr">
+    <h2>📊 Dashboard Admin</h2>
+    <div class="live-pill"><span class="live-dot"></span>Live P2P</div>
+  </div>
+  <div class="admin-qr-card">
+    <h3>📱 QR Code — Projette ça sur grand écran !</h3>
+    <p>Les joueurs scannent le QR ou tapent l'URL + le code de salle pour rejoindre.</p>
+    <div class="qr-admin-inner"><div id="qrAdmin"></div></div>
+    <div><div class="room-code-big" id="roomCodeDisplay">—</div></div>
+    <div class="admin-url-tag" id="adminUrlTag">—</div>
+  </div>
+  <div class="ctrl-row">
+    <button class="ctrl-btn cb-open" id="btnOpen" onclick="openLobby()">🟢 Créer une salle</button>
+    <button class="ctrl-btn cb-start" id="btnStart" onclick="startGame()" disabled>▶️ Lancer !</button>
+    <button class="ctrl-btn cb-next" id="btnNext" onclick="nextQuestion()" style="display:none">⏭ Suivante</button>
+    <button class="ctrl-btn cb-stats" id="btnStats" onclick="showStats()" style="display:none">📊 Stats finales</button>
+  </div>
+  <div class="status-bar" id="adminStatus">⏸ Clique "Créer une salle" pour commencer</div>
+  <div class="admin-q-display" id="adminQDisplay">La question en cours apparaîtra ici…</div>
+  <div class="kpi-row">
+    <div class="kpi"><div class="kpi-num" id="kpiPlayers">0</div><div class="kpi-label">Joueurs</div></div>
+    <div class="kpi"><div class="kpi-num" id="kpiAvg">—</div><div class="kpi-label">Score moyen</div></div>
+    <div class="kpi"><div class="kpi-num" id="kpiBest">—</div><div class="kpi-label">Meilleur</div></div>
+  </div>
+  <div class="sec-title">👥 Joueurs connectés</div>
+  <div class="player-bubbles" id="playerBubbles"><div class="empty">En attente…</div></div>
+  <div class="sec-title">🏆 Classement live</div>
+  <div class="lb-card" id="adminLb"><div class="empty">En attente de joueurs…</div></div>
+</div>
+
+<!-- STATS FINALES -->
+<div id="screen-stats" class="screen">
+  <div class="stats-hero">
+    <div style="font-size:2.8rem;margin-bottom:6px;">🎊</div>
+    <h2>Résultats finaux !</h2>
+  </div>
+  <div class="sec-title">🏆 Podium</div>
+  <div class="podium-row" id="podiumRow"></div>
+  <div class="sec-title">📈 Stats globales</div>
+  <div class="kpi-row" style="margin-bottom:20px;">
+    <div class="kpi"><div class="kpi-num" id="statTotal">0</div><div class="kpi-label">Participants</div></div>
+    <div class="kpi"><div class="kpi-num" id="statAvg2">—</div><div class="kpi-label">Score moyen</div></div>
+    <div class="kpi"><div class="kpi-num" id="statChamp" style="font-size:1rem">—</div><div class="kpi-label">Champion·ne</div></div>
+  </div>
+  <div class="sec-title">❓ Résultats par question</div>
+  <div id="qStatsRows" style="margin-bottom:20px;"></div>
+  <div class="sec-title">🎓 Distribution des niveaux</div>
+  <div class="dist-box" id="levelDist" style="margin-bottom:20px;"></div>
+  <div class="sec-title">🏅 Classement complet</div>
+  <div class="lb-card" id="fullLb" style="margin-bottom:20px;"></div>
+  <button class="ctrl-btn cb-open" onclick="showScreen('screen-admin')" style="width:100%;padding:13px;">← Retour dashboard</button>
+</div>
+
+<script>
+const QUESTIONS=[
+  {q:"ChatGPT, c'est quoi exactement ?",opts:["Un moteur de recherche","Un agent conversationnel basé sur un LLM","Un antivirus intelligent","Un logiciel de comptabilité"],icon:["🔍","💬","🛡️","📊"],ans:1},
+  {q:"Que signifie 'LLM' ?",opts:["Logiciel de Lecture Multimédia","Large Language Model","Limited Learning Machine","Langage de Lecture Moderne"],icon:["💿","🧠","🤖","📖"],ans:1},
+  {q:"Quel est le principal risque d'utiliser l'IA sans esprit critique ?",opts:["Elle consomme trop d'électricité","Elle peut produire des erreurs présentées comme vraies","Elle est trop lente","Elle coûte trop cher"],icon:["⚡","⚠️","🐢","💸"],ans:1},
+  {q:"L'IA générative peut créer… ?",opts:["Uniquement des images","Du texte, images, son, vidéo","Seulement du code","Uniquement des traductions"],icon:["🖼️","✨","💻","🌍"],ans:1},
+  {q:"Qu'est-ce que le 'prompt engineering' ?",opts:["Programmer un robot physique","L'art de rédiger des instructions efficaces pour une IA","Concevoir des circuits","Tester des logiciels"],icon:["🤖","✍️","⚡","🧪"],ans:1},
+  {q:"Quelle entreprise a créé ChatGPT ?",opts:["Google","Meta","OpenAI","Microsoft"],icon:["🔍","📘","🤖","🪟"],ans:2},
+  {q:"L'IA peut-elle remplacer totalement la créativité humaine ?",opts:["Oui, elle est déjà meilleure","Non, elle amplifie mais ne remplace pas","Oui, dans 2 ans","Seulement en musique"],icon:["✅","🤝","⏳","🎵"],ans:1},
+  {q:"Quel outil IA est spécialisé dans la génération d'images ?",opts:["Whisper","Midjourney","GitHub Copilot","Mistral"],icon:["🎤","🎨","💻","🇫🇷"],ans:1},
+  {q:"Que signifie 'IA éthique' ?",opts:["Une IA qui ne consomme pas d'énergie","Une IA développée de façon responsable et transparente","Une IA gratuite","Une IA made in France"],icon:["🔋","⚖️","🆓","🇫🇷"],ans:1},
+  {q:"Comment mieux utiliser l'IA au quotidien ?",opts:["La laisser tout faire sans vérifier","L'utiliser comme assistant et garder le contrôle","L'éviter complètement","Copier-coller sans lire"],icon:["😴","🎯","🚫","📋"],ans:1}
+];
+const TOTAL=QUESTIONS.length;
+const AVATARS=[
+  {e:"🦸",n:"Super IA"},{e:"🤖",n:"RoboQuiz"},{e:"🧙",n:"Mage Tech"},{e:"🥷",n:"Ninja Data"},
+  {e:"👾",n:"Pixel Boss"},{e:"🧑‍🚀",n:"Astro IA"},{e:"🦊",n:"Renard Futé"},{e:"🐼",n:"Panda Cool"},
+  {e:"🦄",n:"Licorne IA"},{e:"🐸",n:"Frog Dev"},{e:"🦁",n:"Lion Leader"},{e:"🐯",n:"Tiger Pro"},
+  {e:"🎩",n:"M. IA"},{e:"🧑‍🔬",n:"Docteur IA"},{e:"🎭",n:"Acteur IA"},{e:"🐙",n:"Octopus AI"},
+  {e:"🦋",n:"Papillon"},{e:"🐬",n:"Dauphin"},{e:"🦅",n:"Aigle"},{e:"🦉",n:"Hibou Sage"},
+  {e:"🐻",n:"Ours Fort"},{e:"🦝",n:"Raton Rusé"},{e:"🐨",n:"Koala Zen"},{e:"👑",n:"Le Boss"}
+];
+
+const $=id=>document.getElementById(id);
+let myName='',myAv=AVATARS[1],myScore=0,myAnswers=[];
+let isAdmin=false,adminPeer=null,playerPeer=null,playerConn=null;
+let players={},curQ=-1,tInt=null,answered=false,roomCode='';
+let adminQrDone=false;
+
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  $(id).classList.add('active');
+}
+function genCode(){return Math.random().toString(36).slice(2,6).toUpperCase();}
+
+window.addEventListener('load',()=>{
+  buildAvGrid();
+  const url=window.location.href;
+  const isLocal=url.startsWith('file://')||url.includes('localhost')||url.includes('127.0.0.1');
+  if(isLocal){
+    $('qrSection').style.display='none';
+    $('localMsg').style.display='block';
+    $('adminUrlTag').textContent='📂 Local — QR actif sur GitHub Pages';
+  } else {
+    $('qrUrlDisplay').textContent=url;
+    new QRCode($('qrHome'),{text:url,width:150,height:150,colorDark:'#ff3355',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.H});
+    $('adminUrlTag').textContent=url;
+  }
+});
+
+function buildAvGrid(){
+  const g=$('avGrid');g.innerHTML='';
+  AVATARS.forEach((av,i)=>{
+    const el=document.createElement('div');
+    el.className='av-btn'+(i===1?' sel':'');
+    el.innerHTML=`<span class="av-em">${av.e}</span><span class="av-nm">${av.n}</span>`;
+    el.onclick=()=>{document.querySelectorAll('.av-btn').forEach(e=>e.classList.remove('sel'));el.classList.add('sel');myAv=av;};
+    g.appendChild(el);
+  });
+}
+
+function adminLogin(){
+  if($('adminPwd').value==='admin2024'){
+    isAdmin=true;showScreen('screen-admin');
+    if(!adminQrDone){
+      const url=window.location.href;
+      const isLocal=url.startsWith('file://')||url.includes('localhost');
+      if(!isLocal){
+        new QRCode($('qrAdmin'),{text:url,width:120,height:120,colorDark:'#ff3355',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.H});
+      } else {
+        $('qrAdmin').innerHTML='<div style="width:120px;height:120px;background:rgba(255,255,255,.05);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:.7rem;color:#fbbf24;text-align:center;padding:10px">📂 QR actif sur<br>GitHub Pages</div>';
+      }
+      adminQrDone=true;
+    }
+  } else {
+    $('adminPwd').style.animation='shake .4s';
+    setTimeout(()=>$('adminPwd').style.animation='',500);
+  }
+}
+
+function openLobby(){
+  roomCode=genCode();
+  players={};curQ=-1;
+  $('roomCodeDisplay').textContent=roomCode;
+  $('adminStatus').textContent=`🟢 Salle "${roomCode}" ouverte — en attente des joueurs`;
+  $('btnStart').disabled=false;
+  $('btnNext').style.display='none';
+  $('btnStats').style.display='none';
+  $('btnOpen').textContent='🔄 Nouvelle salle';
+  $('adminQDisplay').textContent='En attente des joueurs…';
+  renderAdminPlayers();
+  if(adminPeer) adminPeer.destroy();
+  adminPeer=new Peer('QUIZIA-'+roomCode,{debug:0});
+  adminPeer.on('open',()=>{
+    $('adminStatus').textContent=`🟢 Salle "${roomCode}" prête ! Annonce le code aux joueurs.`;
+  });
+  adminPeer.on('connection',conn=>{
+    conn.on('open',()=>{
+      conn.on('data',data=>handleAdminData(data,conn));
+      conn.on('close',()=>{
+        const pid=Object.keys(players).find(k=>players[k].conn===conn);
+        if(pid){delete players[pid];renderAdminPlayers();}
+      });
+    });
+  });
+  adminPeer.on('error',err=>{
+    if(err.type==='unavailable-id'){roomCode=genCode();$('roomCodeDisplay').textContent=roomCode;openLobby();}
+  });
+}
+
+function handleAdminData(data,conn){
+  if(data.type==='join'){
+    players[data.id]={name:data.name,avatar:data.avatar,score:0,answers:[],conn};
+    renderAdminPlayers();
+    $('adminStatus').textContent=`🟢 ${Object.keys(players).length} joueur(s) connecté(s)`;
+    conn.send({type:'joined'});
+  }
+  if(data.type==='answer'){
+    const p=players[data.id];
+    if(p){p.answers.push(data.answer);if(data.correct)p.score+=data.pts;renderAdminPlayers();renderAdminLb();}
+  }
+}
+
+function startGame(){
+  if(!Object.keys(players).length){alert('Aucun joueur connecté !');return;}
+  $('btnStart').disabled=true;
+  launchQuestion(0);
+}
+
+function launchQuestion(idx){
+  curQ=idx;
+  const q=QUESTIONS[idx];
+  $('adminStatus').textContent=`❓ Question ${idx+1}/${TOTAL} en cours…`;
+  $('adminQDisplay').textContent=`Q${idx+1}: ${q.q}`;
+  $('btnNext').style.display='inline-block';
+  $('btnNext').disabled=true;
+  broadcast({type:'question',index:idx,q:q.q,opts:q.opts,icon:q.icon});
+  setTimeout(()=>$('btnNext').disabled=false,22000);
+}
+
+function nextQuestion(){
+  const next=curQ+1;
+  if(next>=TOTAL){
+    broadcast({type:'gameover'});
+    $('adminStatus').textContent='🏁 Quiz terminé !';
+    $('btnNext').style.display='none';
+    $('btnStats').style.display='inline-block';
+  } else {
+    launchQuestion(next);
+  }
+}
+
+function broadcast(msg){
+  Object.values(players).forEach(p=>{try{p.conn.send(msg);}catch(e){}});
+}
+
+function joinGame(){
+  const name=$('joinName').value.trim();
+  const code=$('roomCode').value.trim().toUpperCase();
+  if(!name){$('joinName').focus();return;}
+  if(!code||code.length<4){
+    $('roomCode').style.borderColor='#e21b3c';
+    setTimeout(()=>$('roomCode').style.borderColor='',900);
+    return;
+  }
+  myName=name;myScore=0;myAnswers=[];
+  $('chipAv').textContent=myAv.e;$('chipName').textContent=myName;
+  $('waitAv').textContent=myAv.e;$('waitName').textContent=myName;$('waitCode').textContent=code;
+  showScreen('screen-waiting');
+  connectToAdmin(code);
+}
+
+function connectToAdmin(code){
+  if(playerPeer) playerPeer.destroy();
+  const myId='player-'+Math.random().toString(36).slice(2,8);
+  playerPeer=new Peer(myId,{debug:0});
+  playerPeer.on('open',()=>{
+    playerConn=playerPeer.connect('QUIZIA-'+code);
+    playerConn.on('open',()=>{
+      playerConn.send({type:'join',id:myId,name:myName,avatar:myAv.e});
+    });
+    playerConn.on('data',data=>handlePlayerData(data,myId));
+  });
+  playerPeer.on('error',()=>{
+    alert(`❌ Impossible de rejoindre la salle "${code}".\nVérifie le code avec l'admin !`);
+    showScreen('screen-home');
+  });
+}
+
+function handlePlayerData(data,myId){
+  if(data.type==='question'){curQ=data.index;answered=false;showPlayerQuestion(data,myId);showScreen('screen-quiz');}
+  if(data.type==='gameover') showPlayerResult();
+}
+
+function showPlayerQuestion(data,myId){
+  $('qNum').textContent=`Q ${data.index+1}/${TOTAL}`;
+  $('progFill').style.width=((data.index/TOTAL)*100)+'%';
+  $('qText').textContent=data.q;
+  $('feedback').style.display='none';
+  const grid=$('optsGrid');grid.innerHTML='';
+  data.opts.forEach((o,i)=>{
+    const b=document.createElement('button');
+    b.className=`opt opt-${i}`;
+    b.innerHTML=`<span class="opt-icon">${data.icon[i]}</span><span>${o}</span>`;
+    b.onclick=()=>pickAnswer(i,myId,data.index);
+    grid.appendChild(b);
+  });
+  let t=20;updateRing(t,20);clearInterval(tInt);
+  tInt=setInterval(()=>{t--;updateRing(t,20);if(t<=0){clearInterval(tInt);if(!answered)pickAnswer(-1,myId,data.index);}},1000);
+}
+
+function pickAnswer(i,myId,qIdx){
+  if(answered)return;answered=true;clearInterval(tInt);
+  const q=QUESTIONS[qIdx];
+  const ok=i===q.ans;
+  const t=parseInt($('timerNum').textContent||'0');
+  const pts=ok?Math.max(10,20+t):0;
+  if(ok)myScore+=pts;myAnswers.push(i);
+  document.querySelectorAll('.opt').forEach((b,idx)=>{
+    b.disabled=true;
+    if(idx===q.ans)b.classList.add('reveal-correct');
+    else if(idx===i)b.classList.add('wrong');
+  });
+  const fb=$('feedback');fb.style.display='block';
+  fb.className='feedback '+(ok?'fb-good':'fb-bad');
+  fb.textContent=ok?`✅ +${pts} pts ! 🎉`:`❌ Raté… Bonne réponse : ${q.opts[q.ans]} 💪`;
+  try{playerConn.send({type:'answer',id:myId,answer:i,correct:ok,pts});}catch(e){}
+}
+
+function updateRing(t,max){
+  $('timerNum').textContent=t;
+  $('timerCircle').style.strokeDashoffset=188.5*(1-t/max);
+  $('timerCircle').style.stroke=t<=5?'#e21b3c':t<=10?'#d89e00':'#fbbf24';
+}
+
+function showPlayerResult(){
+  const pct=Math.round(myAnswers.filter((a,i)=>a===QUESTIONS[i]?.ans).length/TOTAL*100);
+  let medal,badge,color,funMsg,advice;
+  if(pct===100){medal='🏆';badge='GÉNIE DE L\'IA 🧠';color='linear-gradient(135deg,#f59e0b,#fbbf24)';funMsg='Parfait ! Même GPT-4 te demande des conseils 😂';advice=[{e:'🚀',t:'Deviens ambassadeur·rice IA dans ton équipe !'},{e:'📚',t:'Explore : Google AI, DeepLearning.AI'},{e:'🎯',t:'Partage ton expérience en formation !'}];}
+  else if(pct>=80){medal='🥇';badge='EXPERT·E IA 💪';color='linear-gradient(135deg,#f59e0b,#fbbf24)';funMsg='Impressionnant·e ! T\'as pas peur des robots toi 🤖';advice=[{e:'🎯',t:'Approfondis les cas d\'usage IA dans ton métier'},{e:'💡',t:'Partage tes bonnes pratiques en formation'},{e:'🔧',t:'Teste des outils IA spécialisés'}];}
+  else if(pct>=60){medal='🥈';badge='BON NIVEAU 👍';color='linear-gradient(135deg,#6b7280,#9ca3af)';funMsg='T\'es à mi-chemin entre novice et expert ! 😄';advice=[{e:'👂',t:'Écoute bien les modules LLM et prompt'},{e:'🧪',t:'Teste ChatGPT sur une vraie tâche pro'},{e:'🤝',t:'Pose des questions en formation !'}];}
+  else if(pct>=40){medal='🥉';badge='INTERMÉDIAIRE 🌱';color='linear-gradient(135deg,#92400e,#b45309)';funMsg='Des bases solides ! La formation arrive pile au bon moment 😉';advice=[{e:'👂',t:'Sois 100% attentif·ve en formation'},{e:'✋',t:'Ose poser des questions !'},{e:'📱',t:'Teste ChatGPT ce soir'}];}
+  else{medal='🌱';badge='DÉBUTANT·E — Bienvenue ! 🎉';color='linear-gradient(135deg,#6366f1,#8b5cf6)';funMsg='Hey, même Elon Musk a débuté un jour ! 😂';advice=[{e:'🌟',t:'Viens avec curiosité en formation'},{e:'👂',t:'Chaque explication compte !'},{e:'🔄',t:'Refais ce quiz après la formation !'}];}
+  $('medalEl').textContent=medal;$('resAv').textContent=myAv.e;
+  $('resName').textContent=`Bravo ${myName} !`;
+  $('resSc').innerHTML=`${myScore}<span class="score-lbl">pts</span>`;
+  $('lvlBadge').innerHTML=`<div class="lvl-badge" style="background:${color};color:${pct>=60?'#000':'#fff'}">${badge}</div>`;
+  $('funMsg').textContent=funMsg;
+  $('adviceBox').innerHTML=`<div class="advice-title">💡 Tes conseils perso</div>`+advice.map(a=>`<div class="advice-item"><span>${a.e}</span><span>${a.t}</span></div>`).join('');
+  if(pct>=80)launchConfetti();
+  showScreen('screen-result');
+}
+
+function showStats(){
+  const list=Object.values(players).sort((a,b)=>b.score-a.score);
+  if(!list.length){alert('Aucun joueur !');return;}
+  $('podiumRow').innerHTML=['🥇','🥈','🥉'].map((m,i)=>list[i]?`
+    <div class="pod-card pod-${i}">
+      <div class="pod-medal">${m}</div>
+      <div class="pod-av">${list[i].avatar}</div>
+      <div class="pod-name">${list[i].name}</div>
+      <div class="pod-score">${list[i].score} pts</div>
+    </div>`:''
+  ).join('');
+  const avg=Math.round(list.reduce((a,p)=>a+p.score,0)/list.length);
+  $('statTotal').textContent=list.length;
+  $('statAvg2').textContent=avg+' pts';
+  $('statChamp').textContent=list[0]?.avatar+' '+list[0]?.name;
+  $('qStatsRows').innerHTML=QUESTIONS.map((q,i)=>{
+    const ok=list.filter(p=>p.answers[i]===q.ans).length;
+    const pct=Math.round(ok/list.length*100);
+    const col=pct>=70?'#10b981':pct>=40?'#fbbf24':'#ef4444';
+    const em=pct>=70?'🟢':pct>=40?'🟡':'🔴';
+    return `<div class="qs-row">
+      <div class="qs-top"><span class="qs-label">${em} Q${i+1}. ${q.q.substring(0,55)}…</span><span class="qs-pct" style="color:${col}">${pct}%</span></div>
+      <div class="qs-bar-track"><div class="qs-bar-fill" style="width:${pct}%;background:${col}"></div></div>
+      <div class="qs-meta">${ok}/${list.length} bonnes réponses</div>
+    </div>`;
+  }).join('');
+  const levels=[{l:'🏆 Génie (100%)',min:95},{l:'🥇 Expert (80%+)',min:70},{l:'🥈 Bon (60%+)',min:50},{l:'🥉 Inter. (40%+)',min:30},{l:'🌱 Débutant',min:0}];
+  const maxS=TOTAL*30;
+  $('levelDist').innerHTML=levels.map(lv=>{
+    const count=list.filter(p=>Math.round(p.score/maxS*100)>=lv.min).length;
+    return `<div class="dist-row"><span class="dist-label">${lv.l}</span><span class="dist-count">${count} joueur${count>1?'s':''}</span></div>`;
+  }).join('');
+  const rc=['rk1','rk2','rk3'];
+  $('fullLb').innerHTML=list.map((p,i)=>`
+    <div class="lb-row">
+      <div class="lb-rank ${rc[i]||'rkx'}">${i+1}</div>
+      <div class="lb-av">${p.avatar}</div>
+      <div class="lb-name">${p.name}</div>
+      <div class="lb-sc">${p.score} pts</div>
+      <div class="lb-bar2"><div class="lb-fill2" style="width:${Math.round(p.score/maxS*100)}%"></div></div>
+    </div>`).join('');
+  showScreen('screen-stats');launchConfetti();
+}
+
+function renderAdminPlayers(){
+  const list=Object.values(players);
+  $('kpiPlayers').textContent=list.length;
+  if(!list.length){$('playerBubbles').innerHTML='<div class="empty">En attente de joueurs…</div>';return;}
+  $('playerBubbles').innerHTML=list.map(p=>`
+    <div class="p-bubble">
+      <span style="font-size:1.6rem">${p.avatar}</span>
+      <span class="p-bname">${p.name.substring(0,8)}</span>
+    </div>`).join('');
+  const avg=Math.round(list.reduce((a,p)=>a+p.score,0)/list.length);
+  $('kpiAvg').textContent=avg+' pts';
+  $('kpiBest').textContent=Math.max(...list.map(p=>p.score))+' pts';
+}
+
+function renderAdminLb(){
+  const list=Object.values(players).sort((a,b)=>b.score-a.score).slice(0,10);
+  if(!list.length){$('adminLb').innerHTML='<div class="empty">En attente…</div>';return;}
+  const rc=['rk1','rk2','rk3'];
+  const max=Math.max(...list.map(p=>p.score),1);
+  $('adminLb').innerHTML=list.map((p,i)=>`
+    <div class="lb-row">
+      <div class="lb-rank ${rc[i]||'rkx'}">${i+1}</div>
+      <div class="lb-av">${p.avatar}</div>
+      <div class="lb-name">${p.name}</div>
+      <div class="lb-sc">${p.score} pts</div>
+      <div class="lb-bar2"><div class="lb-fill2" style="width:${Math.round(p.score/max*100)}%"></div></div>
+    </div>`).join('');
+}
+
+function launchConfetti(){
+  const colors=['#ff3355','#fbbf24','#06b6d4','#10b981','#ec4899','#7c3aed'];
+  const c=$('confetti');c.innerHTML='';
+  for(let i=0;i<90;i++){
+    const el=document.createElement('div');el.className='confetti-piece';
+    el.style.cssText=`left:${Math.random()*100}%;background:${colors[~~(Math.random()*colors.length)]};
+      width:${6+Math.random()*8}px;height:${6+Math.random()*8}px;
+      border-radius:${Math.random()>.5?'50%':'2px'};
+      animation-duration:${2+Math.random()*2}s;animation-delay:${Math.random()}s;`;
+    c.appendChild(el);setTimeout(()=>el.remove(),4000);
+  }
+}
+
+setInterval(()=>{
+  if($('screen-admin').classList.contains('active')){renderAdminPlayers();renderAdminLb();}
+},2000);
+</script>
+</body>
+</html>
